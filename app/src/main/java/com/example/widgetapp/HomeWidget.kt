@@ -50,7 +50,10 @@ import java.time.ZonedDateTime
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class HomeWidget : GlanceAppWidget() {
@@ -78,7 +81,8 @@ class HomeWidget : GlanceAppWidget() {
                 val live = settings.isLive && dates.isNotEmpty()
 
                 // The clock the countdown is measured against. It is re-read on every
-                // refresh, and once a second while a seconds countdown is on screen.
+                // refresh, and once a second while a seconds countdown is showing and
+                // the screen is on. Widgets in any other unit never run this loop.
                 val now by produceState(ZonedDateTime.now(), tick, live) {
                     value = ZonedDateTime.now()
                     while (live) {
@@ -109,9 +113,12 @@ class HomeWidget : GlanceAppWidget() {
         settings: Flow<WidgetSettings>,
         power: PowerManager,
     ) {
-        while (true) {
-            delay(3_000)
-            if (power.isInteractive && settings.first().isLive) update(context, id)
+        // Does nothing at all unless this widget shows seconds.
+        settings.map { it.isLive }.distinctUntilChanged().collectLatest { live ->
+            while (live) {
+                delay(3_000)
+                if (power.isInteractive) update(context, id)
+            }
         }
     }
 }

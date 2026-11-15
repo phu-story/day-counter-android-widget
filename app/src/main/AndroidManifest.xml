@@ -45,10 +45,16 @@
                 android:resource="@xml/home_widget_info" />
         </receiver>
 
-        <!-- Receives the periodic alarm that refreshes the countdown -->
+        <!-- Receives the alarm that refreshes the countdown. Also told when the clock
+             or time zone changes, since that moves every countdown. -->
         <receiver
             android:name=".TickReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

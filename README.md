@@ -74,6 +74,7 @@ app/src/main/java/com/example/widgetapp/
 ├── WidgetEditor.kt          Shared widget editor UI and live preview
 ├── HomeWidget.kt            The Glance widget and its receiver
 ├── WidgetRefresh.kt         Alarm that keeps countdowns current
+├── RefreshPlan.kt           Works out when the widgets next need redrawing
 ├── Countdown.kt             Countdown, progress and sorting logic
 ├── Models.kt                ImportantDate, WidgetSettings, JSON (de)serialization
 └── Store.kt                 DataStore persistence for dates and per-widget settings
@@ -83,8 +84,20 @@ app/src/test/                Unit tests for the countdown maths and settings
 ## How it works
 
 - Dates and widget settings are stored in a Preferences DataStore. Each widget's settings are saved under `widget_<id>`, and removed when the widget is removed.
-- The widget is built with Jetpack Glance. Android refreshes widgets only every 30 minutes on its own, so a non-wakeup alarm redraws them every minute (hour, minute or second countdowns) or every 15 minutes (everything else). It never wakes a sleeping phone.
+- The widget is built with Jetpack Glance.
 - Whole-day countdowns compare calendar dates, so an all-day event shows "Today" for the whole day. Year and month countdowns follow the real calendar, including leap years.
+
+## Battery use
+
+The widgets are redrawn only when something they show changes:
+
+- One alarm is set for the exact moment a countdown number next changes, a date arrives, or the day rolls over (`RefreshPlan.kt`). A widget counting whole days is redrawn once a day; one counting minutes, once a minute.
+- The alarm is non-wakeup, so it never wakes a sleeping phone. It fires as soon as the phone is next awake.
+- If the alarm fires with the screen off and another is due within two minutes, the redraw is skipped.
+- Android's own periodic widget refresh, which does wake the phone, is set to once a day as a safety net.
+- The app's on-screen clock stops when the app is in the background.
+
+The exception is a **seconds** countdown. It redraws the widget every second whenever the screen is on, in any app, and uses a small but constant amount of CPU. Every other unit costs nothing between refreshes.
 
 ## Known limitations
 

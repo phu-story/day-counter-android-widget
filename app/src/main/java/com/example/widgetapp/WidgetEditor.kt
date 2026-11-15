@@ -55,18 +55,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** The current time, refreshed on every second. */
+/** The current time, refreshed on every second, but only while the screen is being shown. */
 @Composable
-fun rememberNow(): State<ZonedDateTime> = produceState(ZonedDateTime.now()) {
-    while (true) {
-        delay(1_000 - System.currentTimeMillis() % 1_000)
-        value = ZonedDateTime.now()
+fun rememberNow(): State<ZonedDateTime> {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    return produceState(ZonedDateTime.now(), lifecycle) {
+        // Stops ticking when the app goes to the background and resumes on return.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                value = ZonedDateTime.now()
+                delay(1_000 - System.currentTimeMillis() % 1_000)
+            }
+        }
     }
 }
 
@@ -178,6 +187,14 @@ private fun WidgetEditor(
             FieldLabel("Count in")
             ChipRow(CountdownUnit.entries, settings.unit, { it.label }) { unit ->
                 onChange { it.copy(unit = unit) }
+            }
+            if (settings.unit == CountdownUnit.SECONDS) {
+                Text(
+                    "Seconds redraw the widget every second while the screen is on, " +
+                        "which uses more battery than the other units.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (settings.unit != CountdownUnit.SECONDS) {
                 FieldLabel("Decimal places")

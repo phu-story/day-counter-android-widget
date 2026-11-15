@@ -61,13 +61,8 @@ data class WidgetSettings(
     /** 0 = fully transparent, 1 = solid. */
     val backgroundAlpha: Float = 1f,
 ) {
-    /** True when the widget has to redraw every second. */
+    /** True when the widget redraws every second: a seconds countdown is showing. */
     val isLive: Boolean get() = showCountdown && unit == CountdownUnit.SECONDS
-
-    /** True when the countdown changes too fast for a 15-minute refresh. */
-    val needsMinuteRefresh: Boolean
-        get() = showCountdown &&
-            (unit == CountdownUnit.HOURS || unit == CountdownUnit.MINUTES || unit == CountdownUnit.SECONDS)
 
     /** The dates this widget shows, out of everything saved. */
     fun visible(dates: List<ImportantDate>): List<ImportantDate> =
